@@ -60,6 +60,7 @@ namespace UnoCardsServer
             if (len == 0) return;
             string message = Encoding.UTF8.GetString(_buffer, 0, len);
             Console.WriteLine(message);
+            client.Close();
             StartRecieve(client);
         }
     }
