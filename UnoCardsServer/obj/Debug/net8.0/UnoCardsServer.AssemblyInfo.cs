@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UnoCardsServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f281ef0064e15fe965aaa6e85405cbc12c03a35e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7fa62378b8084254a654fe8199b36f725ade1e1e")]
 [assembly: System.Reflection.AssemblyProductAttribute("UnoCardsServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UnoCardsServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
