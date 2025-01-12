@@ -1,0 +1,14 @@
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\bin\Debug\net8.0\UnoCardsServer.exe
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\bin\Debug\net8.0\UnoCardsServer.deps.json
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\bin\Debug\net8.0\UnoCardsServer.runtimeconfig.json
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\bin\Debug\net8.0\UnoCardsServer.dll
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\bin\Debug\net8.0\UnoCardsServer.pdb
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.GeneratedMSBuildEditorConfig.editorconfig
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.AssemblyInfoInputs.cache
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.AssemblyInfo.cs
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.csproj.CoreCompileInputs.cache
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.dll
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\refint\UnoCardsServer.dll
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.pdb
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.genruntimeconfig.cache
+D:\JAMES\James\programming\unity\UnoCards\UnocardsServer\UnoCardsServer\obj\Debug\net8.0\ref\UnoCardsServer.dll
