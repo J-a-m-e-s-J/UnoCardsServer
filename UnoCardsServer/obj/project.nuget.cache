@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "WaoiAdmGJXM=",
+  "dgSpecHash": "0JP9DkMqvKA=",
   "success": true,
-  "projectFilePath": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
+  "projectFilePath": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\james\\.nuget\\packages\\entityframework\\6.4.4\\entityframework.6.4.4.nupkg.sha512",
     "C:\\Users\\james\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",

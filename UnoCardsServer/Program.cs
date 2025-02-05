@@ -25,9 +25,9 @@ public static class UnoCardsServer
         _server.Listen();
         StartAccept();
         Thread handleFunc = new Thread(HandleFuncs);
-        Thread handleFuncInput = new Thread(HandleInputFuncs);
+        // Thread handleFuncInput = new Thread(HandleInputFuncs);
         handleFunc.Start();
-        handleFuncInput.Start();
+        // handleFuncInput.Start();
     }
 
     static void SendMsg(Socket client, byte[] buffer)
@@ -76,9 +76,18 @@ public static class UnoCardsServer
     
     static void HandleMessage(string message)
     {
+        HandleMessage(message, new []{ ' ' });
+    }
+    
+    static void HandleMessage(string message, char separator)
+    {
+        HandleMessage(message, new []{ separator });
+    }
+
+    static void HandleMessage(string message, char[] separators)
+    {
         lock (_lock)
         {
-            char[] separators = new[] { ' ' };
             List<string> parts = message.Split(separators).ToList();
             _func = parts[0];
 
@@ -99,49 +108,47 @@ public static class UnoCardsServer
         Console.WriteLine(message);
         // Console.WriteLine("msg:" + message);
     }
-    
-    static void HandleMessage(string message, char separator)
-    {
-        
-    }
-
-    static void HandleMessage(string message, char[] separators)
-    {
-        
-    }
 
     static void HandleFuncs()
     {
-        while (_isRunning)
+        Task.Run(() =>
         {
-            lock (_lock)
+            while (_isRunning)
             {
-                SwitchFunc(_func, _parameters);
-            }
-        }
-    }
-
-    static void HandleInputFuncs()
-    {
-        while (_isRunning)
-        {
-            lock (_lock)
-            {
-                _funcInput = Console.ReadLine()!;
-
-                try
+                lock (_lock)
                 {
-                    HandleMessage(_funcInput);
-                    SwitchFunc(_funcInput, _parameters);
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("Wrong input!\nInput parameters!");
-                    _func = "";
-                    // Console.WriteLine(e);
-                    continue;
+                    _funcInput = Console.ReadLine()!;
+
+                    try
+                    {
+                        HandleMessage(_funcInput);
+                        SwitchFunc(_funcInput, _parameters);
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Wrong input!\nInput parameters!");
+                        _func = "";
+                        // Console.WriteLine(e);
+                        continue;
+                    }
                 }
             }
+        });
+
+        Task.Run(() =>
+        {
+            while (_isRunning)
+            {
+                lock (_lock)
+                {
+                    SwitchFunc(_func, _parameters);
+                }
+            }
+        });
+
+        while (_isRunning)
+        {
+            continue;
         }
     }
 
@@ -158,14 +165,7 @@ public static class UnoCardsServer
 
                 case "log":
                     Console.WriteLine(func);
-                    var messageLog = parameters[0];
-                    if (messageLog.Contains(":ip"))
-                    {
-                        foreach (var i in messageLog)
-                        {
-                            
-                        }
-                    }
+                    string messageLog = parameters[0];
                     break;
                 
                 case "":

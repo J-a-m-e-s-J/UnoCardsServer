@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj": {}
+    "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj": {}
   },
   "projects": {
-    "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj": {
+    "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
+        "projectUniqueName": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
         "projectName": "UnoCardsServer",
-        "projectPath": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
+        "projectPath": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
         "packagesPath": "C:\\Users\\james\\.nuget\\packages\\",
-        "outputPath": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\obj\\",
+        "outputPath": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\james\\AppData\\Roaming\\NuGet\\NuGet.Config"
