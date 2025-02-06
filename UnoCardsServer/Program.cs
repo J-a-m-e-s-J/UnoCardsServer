@@ -9,25 +9,16 @@ public static class UnoCardsServer
 {
     private static Socket _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     private static byte[] _buffer = new byte[1024];
-    private static string _func = null!;
-    private static string _funcInput = null!;
-    private static string _parameter = null!;
-    private static List<string> _parameters = new List<string>();
     private static List<Socket> _userList = new List<Socket>();
-    private static List<string> _funcs = new List<string>() { "exit", "log", "" };
+    private static List<string> _funcs = new List<string>() { "exit", "log", "sqlite", "" };
     private static bool _isRunning = true;
-    private static object _lock = new object();
+    private static SQLiteConnection _connection = new SQLiteConnection(@"Data Source=F:\unity\UnoCards\UnoCardsServer\UserInfo.sqlite");
+    // private static string _sqliteQuery = "";
+    private static SQLiteCommand _sqLiteCommand = new SQLiteCommand();
     
     public static void Main(string[] args)
     {
-        // _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        _server.Bind(new IPEndPoint(IPAddress.Any, 25565));
-        _server.Listen();
-        StartAccept();
-        Thread handleFunc = new Thread(HandleFuncs);
-        // Thread handleFuncInput = new Thread(HandleInputFuncs);
-        handleFunc.Start();
-        // handleFuncInput.Start();
+        Init();
     }
 
     static void SendMsg(Socket client, byte[] buffer)
@@ -70,13 +61,12 @@ public static class UnoCardsServer
         string message = Encoding.UTF8.GetString(_buffer, 0, len);
         // Console.WriteLine(message);
         HandleMessage(message);
-        // client.Close();
         StartRecieve(client);
     }
     
     static void HandleMessage(string message)
     {
-        HandleMessage(message, new []{ ' ' });
+        HandleMessage(message, new []{ '(' });
     }
     
     static void HandleMessage(string message, char separator)
@@ -86,91 +76,131 @@ public static class UnoCardsServer
 
     static void HandleMessage(string message, char[] separators)
     {
-        lock (_lock)
+        List<string> parts = message.Split(separators).ToList();
+        string func = parts[0];
+
+        if (!_funcs.Contains(func))
         {
-            List<string> parts = message.Split(separators).ToList();
-            _func = parts[0];
-
-            if (!_funcs.Contains(_func))
-            {
-                Console.WriteLine("Invalid function");
-                return;
-            }
-
-            if (_func == "")
-            {
-                return;
-            }
-            
-            _parameter = parts[1];
-            _parameters = _parameter.Split('(', ')', ' ').ToList();
+            Console.WriteLine("Invalid function");
+            return;
         }
-        Console.WriteLine(message);
+
+        if (func == "")
+            return;
+        
+        string parameter = parts[1];
+        List<string> parameters = parameter.Split('(', ')', ' ').ToList();
+        
+        SwitchFunc(func, parameters);
+        // Console.WriteLine(message);
         // Console.WriteLine("msg:" + message);
     }
 
     static void HandleFuncs()
     {
-        Task.Run(() =>
-        {
-            while (_isRunning)
-            {
-                lock (_lock)
-                {
-                    _funcInput = Console.ReadLine()!;
-
-                    try
-                    {
-                        HandleMessage(_funcInput);
-                        SwitchFunc(_funcInput, _parameters);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine("Wrong input!\nInput parameters!");
-                        _func = "";
-                        // Console.WriteLine(e);
-                        continue;
-                    }
-                }
-            }
-        });
-
-        Task.Run(() =>
-        {
-            while (_isRunning)
-            {
-                lock (_lock)
-                {
-                    SwitchFunc(_func, _parameters);
-                }
-            }
-        });
-
         while (_isRunning)
         {
-            continue;
+            string msgInput = Console.ReadLine()!;
+
+            try
+            {
+                HandleMessage(msgInput);
+            }
+            catch (Exception e)
+            {
+                // Console.WriteLine(e);
+                Console.WriteLine("An Exception Occured: " + e.GetType() + "\n" + e.Message);
+                continue;
+            }
         }
     }
 
     static void SwitchFunc(string func, List<string> parameters)
     {
-        lock (_lock)
+        switch (func)
         {
-            switch (func)
-            {
-                case "exit":
-                    Console.WriteLine("服务端已退出");
-                    _isRunning = false;
-                    break;
+            case "exit":
+                Console.WriteLine("[Input Thread]Server exited");
+                _isRunning = false;
+                break;
 
-                case "log":
-                    Console.WriteLine(func);
-                    string messageLog = parameters[0];
-                    break;
-                
-                case "":
-                    break;
-            }
+            case "log":
+                // Console.WriteLine(func);
+                string messageLog = parameters[0];
+                Console.WriteLine(messageLog);
+                break;
+            
+            case "sqlite":
+                string operation = parameters[0];
+                switch (operation)
+                {
+                    case "update":
+                        switch (parameters[1])
+                        {
+                            case "username":
+                                RunSqliteCommand($"UPDATE user_info SET password = '{parameters[3]}' WHERE username = '{parameters[2]}'");
+                                Console.WriteLine("[Input Thread] Function executed successfully");
+                                break;
+                            
+                            case "password":
+                                RunSqliteCommand($"UPDATE user_info SET username = '{parameters[3]}' WHERE password = '{parameters[2]}'");
+                                Console.WriteLine("[Input Thread] Function executed successfully");
+                                break;
+                        }
+                        break;
+                    
+                    case "insert":
+                        RunSqliteCommand($"INSERT INTO user_info (username, password) VALUES ('{parameters[1]}', '{parameters[2]}')");
+                        Console.WriteLine("[Input Thread] Function executed successfully");
+                        break;
+                }
+                break;
+            
+            case "":
+                break;
         }
+    }
+
+    static void Init()
+    {
+        // 服务器初始化
+        _server.Bind(new IPEndPoint(IPAddress.Any, 25565));
+        _server.Listen();
+        StartAccept();
+        Thread handleFunc = new Thread(HandleFuncs);
+        // Thread handleFuncInput = new Thread(HandleInputFuncs);
+        handleFunc.Start();
+        // handleFuncInput.Start();
+        
+        // 建立与数据库连接
+        try
+        {
+            _connection.Open();
+        }
+        catch (SQLiteException e)
+        {
+            Console.WriteLine(e);
+        }
+
+        _sqLiteCommand.Connection = _connection;
+        
+        Console.WriteLine($"[Main Thread]Server started successfully!");
+        
+        // _sqliteQuery = "SELECT * FROM user_info";
+        // _sqLiteCommand.CommandText = _sqliteQuery;
+        // SQLiteDataReader reader = _sqLiteCommand.ExecuteReader();
+        // while (reader.Read())
+        // {
+        //     string username = reader.GetString(0);
+        //     string password = reader.GetString(1);
+        //     Console.WriteLine("username: " + username + "\npassword:" + password + "\n");
+        // }
+        // reader.Close();
+    }
+
+    static void RunSqliteCommand(string sqliteQuery)
+    {
+        _sqLiteCommand.CommandText = sqliteQuery;
+        _sqLiteCommand.ExecuteNonQuery();
     }
 }
