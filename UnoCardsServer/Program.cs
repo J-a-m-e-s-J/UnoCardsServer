@@ -10,6 +10,7 @@ public static class UnoCardsServer
     private static Socket _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     private static byte[] _buffer = new byte[1024];
     private static List<Socket> _userList = new List<Socket>();
+    private static string _message = "";
     private static List<string> _funcs = new List<string>() { "exit", "log", "sqlite", "" };
     private static bool _isRunning = true;
     private static SQLiteConnection _connection = new SQLiteConnection(@"Data Source=F:\unity\UnoCards\UnoCardsServer\UserInfo.sqlite");
@@ -40,6 +41,7 @@ public static class UnoCardsServer
     {
         Socket client = _server.EndAccept(iar);
         _userList.Add(client);
+        SendMsg(client, Encoding.UTF8.GetBytes(_message));
         StartRecieve(client);
         StartAccept();
     }
@@ -51,7 +53,7 @@ public static class UnoCardsServer
 
     static void RecieveCallback(IAsyncResult iar)
     {
-        Socket client = (Socket)iar.AsyncState!;
+        Socket client = (Socket) iar.AsyncState!;
         int len = client.EndReceive(iar);
         if (len == 0)
         {
@@ -78,6 +80,7 @@ public static class UnoCardsServer
     {
         List<string> parts = message.Split(separators).ToList();
         string func = parts[0];
+        // Console.WriteLine(func);
 
         if (!_funcs.Contains(func))
         {
@@ -126,8 +129,18 @@ public static class UnoCardsServer
 
             case "log":
                 // Console.WriteLine(func);
-                string messageLog = parameters[0];
-                Console.WriteLine(messageLog);
+                foreach (string parameter in parameters)
+                {
+                    Console.Write(parameter);
+                    if (parameter != parameters[^1])
+                    {
+                        Console.Write(" ");
+                    }
+                    else
+                    {
+                        Console.WriteLine("");
+                    }
+                }
                 break;
             
             case "sqlite":
@@ -150,6 +163,19 @@ public static class UnoCardsServer
                         break;
                     
                     case "insert":
+                        _sqLiteCommand.CommandText = "SELECT * FROM user_info";
+                        SQLiteDataReader reader = _sqLiteCommand.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            string username = reader.GetString(0);
+                            if (username == parameters[1])
+                            {
+                                _message = "username existed";
+                                return;
+                            }
+                        }
+                        reader.Close();
+                        
                         RunSqliteCommand($"INSERT INTO user_info (username, password) VALUES ('{parameters[1]}', '{parameters[2]}')");
                         Console.WriteLine("[Input Thread] Function executed successfully");
                         break;
@@ -185,17 +211,8 @@ public static class UnoCardsServer
         _sqLiteCommand.Connection = _connection;
         
         Console.WriteLine($"[Main Thread]Server started successfully!");
-        
-        // _sqliteQuery = "SELECT * FROM user_info";
-        // _sqLiteCommand.CommandText = _sqliteQuery;
-        // SQLiteDataReader reader = _sqLiteCommand.ExecuteReader();
-        // while (reader.Read())
-        // {
-        //     string username = reader.GetString(0);
-        //     string password = reader.GetString(1);
-        //     Console.WriteLine("username: " + username + "\npassword:" + password + "\n");
-        // }
-        // reader.Close();
+
+        _message = "hello";
     }
 
     static void RunSqliteCommand(string sqliteQuery)
