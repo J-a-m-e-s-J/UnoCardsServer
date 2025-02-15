@@ -10,26 +10,31 @@ public static class UnoCardsServer
     private static Socket _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     private static byte[] _buffer = new byte[1024];
     private static List<Socket> _userList = new List<Socket>();
-    private static string _message = "";
     private static List<string> _funcs = new List<string>() { "exit", "log", "sqlite", "" };
     private static bool _isRunning = true;
     private static SQLiteConnection _connection = new SQLiteConnection(@"Data Source=F:\unity\UnoCards\UnoCardsServer\UserInfo.sqlite");
-    // private static string _sqliteQuery = "";
     private static SQLiteCommand _sqLiteCommand = new SQLiteCommand();
-    
+
     public static void Main(string[] args)
     {
         Init();
     }
 
-    static void SendMsg(Socket client, byte[] buffer)
+    static void SendMsg(string message)
     {
-        client.Send(buffer);
+        lock (_userList)
+        {
+            foreach (Socket client in _userList)
+            {
+                if (client == _server) continue;
+                SendMsg(message, client);
+            }
+        }
     }
 
-    static void SendMsg(Socket client)
+    static void SendMsg(string message, Socket client)
     {
-        client.Send(_buffer);
+        client.Send(Encoding.UTF8.GetBytes(message));
     }
 
     static void StartAccept()
@@ -40,67 +45,146 @@ public static class UnoCardsServer
     static void AcceptCallback(IAsyncResult iar)
     {
         Socket client = _server.EndAccept(iar);
-        _userList.Add(client);
-        SendMsg(client, Encoding.UTF8.GetBytes(_message));
+        lock (_userList)
+        {
+            _userList.Add(client);
+            Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tNew user connected\tIp: {((IPEndPoint)client.RemoteEndPoint!).Address}\tPort: {((IPEndPoint)client.RemoteEndPoint!).Port}");
+            Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser count: {_userList.Count}");
+        }
+
         StartRecieve(client);
         StartAccept();
     }
 
     static void StartRecieve(Socket client)
     {
-        client.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, RecieveCallback, client);
+        lock (_userList)
+        {
+            try
+            {
+                client.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, RecieveCallback, client);
+            }
+            catch (Exception)
+            {
+                Socket clientTemp = _userList.Find(c => (((IPEndPoint)c.RemoteEndPoint!).Address.ToString() == ((IPEndPoint)client.RemoteEndPoint!).Address.ToString()) && (((IPEndPoint)c.RemoteEndPoint).Port == ((IPEndPoint)client.RemoteEndPoint).Port))!;
+                _userList.Remove(client);
+                Console.WriteLine(
+                    $"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser disconnected\tIp: {((IPEndPoint)clientTemp.RemoteEndPoint!).Address}\tPort: {((IPEndPoint)clientTemp.RemoteEndPoint!).Port}");
+                Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser count: {_userList.Count}");
+                client.Close();
+            }
+        }
     }
 
     static void RecieveCallback(IAsyncResult iar)
     {
-        Socket client = (Socket) iar.AsyncState!;
-        int len = client.EndReceive(iar);
-        if (len == 0)
+        Socket client = null!;
+        try
         {
-            _userList.Remove(client);
-            return;
+            client = (Socket)iar.AsyncState!;
+            int len;
+            lock (_userList)
+            {
+                foreach (Socket user in _userList.ToList())
+                {
+                    if (!user.Connected)
+                    {
+                        _userList.Remove(user);
+                        Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser disconnected\tIp: {((IPEndPoint)user.RemoteEndPoint!).Address}\tPort: {((IPEndPoint)user.RemoteEndPoint!).Port}");
+                        Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser count: {_userList.Count}");
+                        user.Close();
+                        break;
+                    }
+                }
+
+                len = client.EndReceive(iar);
+                if (len == 0)
+                {
+                    _userList.Remove(client);
+                    Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser disconnected\tIp: {((IPEndPoint)client.RemoteEndPoint!).Address}\tPort: {((IPEndPoint)client.RemoteEndPoint!).Port}");
+                    Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser count: {_userList.Count}");
+                    client.Close();
+                    return;
+                }
+            }
+
+            string message = Encoding.UTF8.GetString(_buffer, 0, len);
+            // Console.WriteLine(message);
+            HandleMessage(message);
+            message = "";
+            StartRecieve(client);
         }
-        string message = Encoding.UTF8.GetString(_buffer, 0, len);
-        // Console.WriteLine(message);
-        HandleMessage(message);
-        StartRecieve(client);
+        catch (SocketException)
+        {
+            lock (_userList)
+            {
+                if (_userList.Contains(client))
+                {
+                    _userList.Remove(client);
+                    Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser disconnected\tIp: {((IPEndPoint)client.RemoteEndPoint!).Address}\tPort: {((IPEndPoint)client.RemoteEndPoint!).Port}");
+                    Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser count: {_userList.Count}");
+                    client.Close();
+                }
+            }
+        }
     }
-    
+
     static void HandleMessage(string message)
     {
-        HandleMessage(message, new []{ '(' });
+        HandleMessage(message, new[] { '-' });
     }
-    
+
     static void HandleMessage(string message, char separator)
     {
-        HandleMessage(message, new []{ separator });
+        HandleMessage(message, new[] { separator });
     }
 
     static void HandleMessage(string message, char[] separators)
     {
         List<string> parts = message.Split(separators).ToList();
-        string func = parts[0];
-        // Console.WriteLine(func);
-
-        if (!_funcs.Contains(func))
+        string func, parameter, ip, port;
+        try
         {
-            Console.WriteLine("Invalid function");
+            func = parts[0];
+            parameter = parts[1];
+        }
+        catch (Exception)
+        {
+            Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tInvalid message");
             return;
         }
 
-        if (func == "")
+        if (!_funcs.Contains(func))
+        {
+            Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tInvalid function");
             return;
-        
-        string parameter = parts[1];
+        }
+
+        if (func == "") return;
+
         List<string> parameters = parameter.Split('(', ')', ' ').ToList();
+        parameters.Remove(parameters[0]);
+        parameters.Remove(parameters[^1]);
         
-        SwitchFunc(func, parameters);
-        // Console.WriteLine(message);
-        // Console.WriteLine("msg:" + message);
+        try
+        {
+            ip = parts[2];
+            port = parts[3];
+        }
+        catch (Exception)
+        {
+            SwitchFunc(func, parameters);
+            return;
+        }
+
+        SwitchFunc(func, parameters, ip, port);
     }
 
     static void HandleFuncs()
     {
+        // 线称启动成功提示
+        Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tFunction Handler started successfully!");
+        
         while (_isRunning)
         {
             string msgInput = Console.ReadLine()!;
@@ -118,31 +202,25 @@ public static class UnoCardsServer
         }
     }
 
-    static void SwitchFunc(string func, List<string> parameters)
+    static void SwitchFunc(string func, List<string> parameters, string ip = "", string port = "")
     {
         switch (func)
         {
             case "exit":
-                Console.WriteLine("[Input Thread]Server exited");
+                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tServer exited");
                 _isRunning = false;
                 break;
 
             case "log":
-                // Console.WriteLine(func);
+                Console.Write($"[Function Handler {DateTime.Now:hh:mm:ss}]\tServer log: ");
+
                 foreach (string parameter in parameters)
                 {
-                    Console.Write(parameter);
-                    if (parameter != parameters[^1])
-                    {
-                        Console.Write(" ");
-                    }
-                    else
-                    {
-                        Console.WriteLine("");
-                    }
+                    Console.Write(parameter + " ");
                 }
+                Console.WriteLine("");
                 break;
-            
+
             case "sqlite":
                 string operation = parameters[0];
                 switch (operation)
@@ -151,37 +229,96 @@ public static class UnoCardsServer
                         switch (parameters[1])
                         {
                             case "username":
-                                RunSqliteCommand($"UPDATE user_info SET password = '{parameters[3]}' WHERE username = '{parameters[2]}'");
-                                Console.WriteLine("[Input Thread] Function executed successfully");
+                                RunSqliteCommand(
+                                    $"UPDATE user_info SET password = '{parameters[3]}' WHERE username = '{parameters[2]}'");
+                                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tFunction executed successfully");
                                 break;
-                            
+
                             case "password":
-                                RunSqliteCommand($"UPDATE user_info SET username = '{parameters[3]}' WHERE password = '{parameters[2]}'");
-                                Console.WriteLine("[Input Thread] Function executed successfully");
+                                RunSqliteCommand(
+                                    $"UPDATE user_info SET username = '{parameters[3]}' WHERE password = '{parameters[2]}'");
+                                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tFunction executed successfully");
                                 break;
                         }
+
                         break;
-                    
+
                     case "insert":
                         _sqLiteCommand.CommandText = "SELECT * FROM user_info";
+                        
+                        // 检查用户名是否已存在
                         SQLiteDataReader reader = _sqLiteCommand.ExecuteReader();
                         while (reader.Read())
                         {
                             string username = reader.GetString(0);
                             if (username == parameters[1])
                             {
-                                _message = "username existed";
+                                lock (_userList)
+                                {
+                                    if (ip == "" || port == "")
+                                    {
+                                        SendMsg("Username already exists");
+                                    }
+                                    else
+                                    {
+                                        SendMsg("Username already exists",
+                                            _userList.Find(client =>
+                                                ((IPEndPoint)client.RemoteEndPoint!).Address.ToString() == ip &&
+                                                ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
+                                    }
+                                }
+                                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tUsername '{username}' already exists");
+                                reader.Close();
                                 return;
                             }
                         }
                         reader.Close();
                         
-                        RunSqliteCommand($"INSERT INTO user_info (username, password) VALUES ('{parameters[1]}', '{parameters[2]}')");
-                        Console.WriteLine("[Input Thread] Function executed successfully");
+                        // 检查密码是否包含空格
+                        if (parameters.Count > 3)
+                        {
+                            lock (_userList)
+                            {
+                                if (ip == "" && port == "")
+                                {
+                                    SendMsg("Password contains space");
+                                }
+                                else
+                                {
+                                    SendMsg("Password contains space",
+                                        _userList.Find(client =>
+                                            ((IPEndPoint)client.RemoteEndPoint!).Address.ToString() == ip &&
+                                            ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
+                                }
+                            }
+                            Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tPassword contains space");
+                            return;
+                        }
+                        
+                        // 注册成功
+                        lock (_userList)
+                        {
+                            if (ip == "" && port == "")
+                            {
+                                SendMsg("Register success");
+                            }
+                            else
+                            {
+                                SendMsg("Register success",
+                                    _userList.Find(client =>
+                                        ((IPEndPoint)client.RemoteEndPoint!).Address.ToString() == ip &&
+                                        ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
+                            }
+                        }
+
+                        RunSqliteCommand(
+                            $"INSERT INTO user_info (username, password) VALUES ('{parameters[1]}', '{parameters[2]}')");
+                        Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tFunction executed successfully");
                         break;
                 }
+
                 break;
-            
+
             case "":
                 break;
         }
@@ -193,26 +330,23 @@ public static class UnoCardsServer
         _server.Bind(new IPEndPoint(IPAddress.Any, 25565));
         _server.Listen();
         StartAccept();
-        Thread handleFunc = new Thread(HandleFuncs);
-        // Thread handleFuncInput = new Thread(HandleInputFuncs);
+        Thread handleFunc = new Thread(HandleFuncs); 
         handleFunc.Start();
-        // handleFuncInput.Start();
-        
+
         // 建立与数据库连接
         try
         {
             _connection.Open();
+            _sqLiteCommand.Connection = _connection;
+            
         }
         catch (SQLiteException e)
         {
             Console.WriteLine(e);
         }
-
-        _sqLiteCommand.Connection = _connection;
         
-        Console.WriteLine($"[Main Thread]Server started successfully!");
-
-        _message = "hello";
+        // 服务器启动成功提示
+        Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\t"+"Server started successfully!");
     }
 
     static void RunSqliteCommand(string sqliteQuery)
