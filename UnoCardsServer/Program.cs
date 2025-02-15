@@ -1,4 +1,9 @@
-﻿namespace UnoCardsServer;
+﻿using System.Data;
+using Exceptions;
+
+// using Exceptions;
+
+namespace UnoCardsServer;
 
 using System.Net;
 using System.Net.Sockets;
@@ -60,19 +65,7 @@ public static class UnoCardsServer
     {
         lock (_userList)
         {
-            try
-            {
-                client.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, RecieveCallback, client);
-            }
-            catch (Exception)
-            {
-                Socket clientTemp = _userList.Find(c => (((IPEndPoint)c.RemoteEndPoint!).Address.ToString() == ((IPEndPoint)client.RemoteEndPoint!).Address.ToString()) && (((IPEndPoint)c.RemoteEndPoint).Port == ((IPEndPoint)client.RemoteEndPoint).Port))!;
-                _userList.Remove(client);
-                Console.WriteLine(
-                    $"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser disconnected\tIp: {((IPEndPoint)clientTemp.RemoteEndPoint!).Address}\tPort: {((IPEndPoint)clientTemp.RemoteEndPoint!).Port}");
-                Console.WriteLine($"[Main Thread {DateTime.Now:hh:mm:ss}]\t\tUser count: {_userList.Count}");
-                client.Close();
-            }
+            client.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, RecieveCallback, client);
         }
     }
 
@@ -223,6 +216,7 @@ public static class UnoCardsServer
 
             case "sqlite":
                 string operation = parameters[0];
+                SQLiteDataReader reader;
                 switch (operation)
                 {
                     case "update":
@@ -245,9 +239,9 @@ public static class UnoCardsServer
 
                     case "insert":
                         _sqLiteCommand.CommandText = "SELECT * FROM user_info";
+                        reader = _sqLiteCommand.ExecuteReader();
                         
                         // 检查用户名是否已存在
-                        SQLiteDataReader reader = _sqLiteCommand.ExecuteReader();
                         while (reader.Read())
                         {
                             string username = reader.GetString(0);
@@ -257,7 +251,8 @@ public static class UnoCardsServer
                                 {
                                     if (ip == "" || port == "")
                                     {
-                                        SendMsg("Username already exists");
+                                        // SendMsg("Username already exists");
+                                        throw new IpMissingException("missing ip");
                                     }
                                     else
                                     {
@@ -281,7 +276,8 @@ public static class UnoCardsServer
                             {
                                 if (ip == "" && port == "")
                                 {
-                                    SendMsg("Password contains space");
+                                    // SendMsg("Password contains space");
+                                    throw new IpMissingException("missing ip");
                                 }
                                 else
                                 {
@@ -300,7 +296,8 @@ public static class UnoCardsServer
                         {
                             if (ip == "" && port == "")
                             {
-                                SendMsg("Register success");
+                                // SendMsg("Register success");
+                                throw new IpMissingException("missing ip");
                             }
                             else
                             {
@@ -315,8 +312,65 @@ public static class UnoCardsServer
                             $"INSERT INTO user_info (username, password) VALUES ('{parameters[1]}', '{parameters[2]}')");
                         Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tFunction executed successfully");
                         break;
+                    
+                    case "login":
+                        _sqLiteCommand.CommandText = "SELECT * FROM user_info";
+                        reader = _sqLiteCommand.ExecuteReader();
+                        
+                        // 检查密码是否包含空格
+                        if (parameters.Count > 3)
+                        {
+                            lock (_userList)
+                            {
+                                if (ip == "" && port == "")
+                                {
+                                    // SendMsg("Password contains space");
+                                    throw new IpMissingException("missing ip");
+                                }
+                                else
+                                {
+                                    SendMsg("Password contains space",
+                                        _userList.Find(client =>
+                                            ((IPEndPoint)client.RemoteEndPoint!).Address.ToString() == ip &&
+                                            ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
+                                }
+                            }
+                            Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tPassword contains space");
+                            return;
+                        }
+                        
+                        // 登录成功
+                        while (reader.Read())
+                        {
+                            string username = reader.GetString(0);
+                            string password = reader.GetString(1);
+                            if (username == parameters[1] && password == parameters[2])
+                            {
+                                lock (_userList)
+                                {
+                                    if (ip == "" && port == "")
+                                    {
+                                        // SendMsg("Login success");
+                                        throw new IpMissingException("missing ip");
+                                    }
+                                    else
+                                    {
+                                        SendMsg("Login success",
+                                            _userList.Find(client =>
+                                                ((IPEndPoint)client.RemoteEndPoint!).Address.ToString() == ip &&
+                                                ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
+                                    }
+                                }
+                                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tLogin success");
+                                reader.Close();
+                                return;
+                            }
+                        }
+                        
+                        reader.Close();
+                        break;
                 }
-
+                
                 break;
 
             case "":

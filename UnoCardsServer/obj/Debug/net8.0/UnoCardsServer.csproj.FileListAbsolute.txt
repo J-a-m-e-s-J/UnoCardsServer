@@ -84,3 +84,5 @@ F:\unity\UnoCards\UnoCardsServer\UnoCardsServer\obj\Debug\net8.0\refint\UnoCards
 F:\unity\UnoCards\UnoCardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.pdb
 F:\unity\UnoCards\UnoCardsServer\UnoCardsServer\obj\Debug\net8.0\UnoCardsServer.genruntimeconfig.cache
 F:\unity\UnoCards\UnoCardsServer\UnoCardsServer\obj\Debug\net8.0\ref\UnoCardsServer.dll
+F:\unity\UnoCards\UnoCardsServer\UnoCardsServer\bin\Debug\net8.0\Exceptions.dll
+F:\unity\UnoCards\UnoCardsServer\UnoCardsServer\bin\Debug\net8.0\Exceptions.pdb
