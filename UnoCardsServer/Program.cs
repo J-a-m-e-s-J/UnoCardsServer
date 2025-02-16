@@ -23,6 +23,7 @@ public static class UnoCardsServer
     public static void Main(string[] args)
     {
         Init();
+        
     }
 
     static void SendMsg(string message)
