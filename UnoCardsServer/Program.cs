@@ -336,6 +336,7 @@ public static class UnoCardsServer
                                 }
                             }
                             Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tPassword contains space");
+                            reader.Close();
                             return;
                         }
                         
@@ -361,11 +362,29 @@ public static class UnoCardsServer
                                                 ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
                                     }
                                 }
-                                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tLogin success");
+                                Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tLogin success\tUsername: {username}\tPassword: {password}");
                                 reader.Close();
                                 return;
                             }
                         }
+                        
+                        // 登录失败
+                        lock (_userList)
+                        {
+                            if (ip == "" && port == "")
+                            {
+                                // SendMsg("Login failed");
+                                throw new IpMissingException("missing ip");
+                            }
+                            else
+                            {
+                                SendMsg("Login failed",
+                                    _userList.Find(client =>
+                                        ((IPEndPoint)client.RemoteEndPoint!).Address.ToString() == ip &&
+                                        ((IPEndPoint)client.RemoteEndPoint!).Port.ToString() == port)!);
+                            }
+                        }
+                        Console.WriteLine($"[Function Handler {DateTime.Now:hh:mm:ss}]\tLogin failed");
                         
                         reader.Close();
                         break;
