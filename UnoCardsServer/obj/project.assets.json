@@ -389,6 +389,16 @@
             "rid": "win"
           }
         }
+      },
+      "Exceptions/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Exceptions.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Exceptions.dll": {}
+        }
       }
     }
   },
@@ -1207,10 +1217,16 @@
         "useSharedDesignerContext.txt",
         "version.txt"
       ]
+    },
+    "Exceptions/1.0.0": {
+      "type": "project",
+      "path": "../Exceptions/Exceptions.csproj",
+      "msbuildProject": "../Exceptions/Exceptions.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "Exceptions >= 1.0.0",
       "System.Data.SQLite >= 1.0.119"
     ]
   },
@@ -1220,11 +1236,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
+      "projectUniqueName": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
       "projectName": "UnoCardsServer",
-      "projectPath": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
+      "projectPath": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\UnoCardsServer.csproj",
       "packagesPath": "C:\\Users\\james\\.nuget\\packages\\",
-      "outputPath": "D:\\JAMES\\James\\programming\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\obj\\",
+      "outputPath": "F:\\unity\\UnoCards\\UnoCardsServer\\UnoCardsServer\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\james\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -1238,7 +1254,11 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "F:\\unity\\UnoCards\\UnoCardsServer\\Exceptions\\Exceptions.csproj": {
+              "projectPath": "F:\\unity\\UnoCards\\UnoCardsServer\\Exceptions\\Exceptions.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
